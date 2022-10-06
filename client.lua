@@ -1,5 +1,12 @@
 local ESX = nil
 local PlayerData = {}
+local trackedEntities = {
+    'prop_roadcone02a',
+    'prop_barrier_work05',
+    'p_ld_stinger_s',
+    'prop_boxpile_07d',
+    'hei_prop_cash_crate_half_full'
+}
 
 Citizen.CreateThread(function()
     while ESX == nil do
@@ -32,6 +39,10 @@ RegisterCommand('barier3', function()
     CreateObject('p_ld_stinger_s')
 end)
 
+RegisterCommand('pickup', function()
+    DeleteObject()
+end)
+
 function CreateObject(name)
     if ESX.PlayerData.job.name == 'police' then
         local ped = GetPlayerPed(-1)
@@ -52,5 +63,30 @@ function CreateObject(name)
         end)
     else
         exports['mythic_notify']:DoHudText('error', 'Вие не сте полицай')
+    end
+end
+
+function DeleteObject()
+    local ped = PlayerPedId()
+    local coords    = GetEntityCoords(ped)
+
+    local closestDistance = -1
+    local closestEntity   = nil
+
+    for i=1, #trackedEntities, 1 do
+        local object = GetClosestObjectOfType(coords, 3.0, GetHashKey(trackedEntities[i]), false, false, false)
+
+        if DoesEntityExist(object) then
+            local objCoords = GetEntityCoords(object)
+            local distance  = GetDistanceBetweenCoords(coords, objCoords, true)
+
+            if closestDistance == -1 or closestDistance > distance then
+                closestDistance = distance
+
+                exports['progressBars']:startUI(3000, "Delete prop...")
+                Citizen.Wait(3000)
+                DeleteEntity(object)
+            end
+        end
     end
 end
